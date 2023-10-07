@@ -1,5 +1,6 @@
 # This example grabs current weather details from Open Meteo and displays them on Badger 2040 W.
 # Find out more about the Open Meteo API at https://open-meteo.com
+# For bit speeding up, the "print()"-lines may be commented out
 
 import badger2040
 from badger2040 import WIDTH
@@ -11,7 +12,10 @@ LAT = 53.38609085276884
 LNG = -1.4239983439328177
 TIMEZONE = "auto"  # determines time zone from lat/long
 
-URL = "http://api.open-meteo.com/v1/forecast?latitude=" + str(LAT) + "&longitude=" + str(LNG) + "&current_weather=true&timezone=" + TIMEZONE
+#Weather-data
+URL1 = "http://api.open-meteo.com/v1/forecast?latitude=" + str(LAT) + "&longitude=" + str(LNG) + "&current_weather=true&timezone=" + TIMEZONE
+#European AQI-Data
+URL2 = "https://air-quality-api.open-meteo.com/v1/air-quality?latitude=" + str(LAT) + "&longitude=" + str(LNG) + "&hourly=uv_index,european_aqi&timezone=" + TIMEZONE
 
 # Display Setup
 display = badger2040.Badger2040()
@@ -24,14 +28,14 @@ jpeg = jpegdec.JPEG(display.display)
 display.connect()
 
 
-def get_data():
+def get_weather_data():
     global weathercode, temperature, windspeed, winddirection, date, time
-    print(f"Requesting URL: {URL}")
-    r = urequests.get(URL)
+    print(f"Requesting URL: {URL1}")
+    r = urequests.get(URL1)
     # open the json data
     j = r.json()
-    print("Data obtained!")
-    print(j)
+    print("Weather data obtained!")
+    #print(j)
 
     # parse relevant data from JSON
     current = j["current_weather"]
@@ -40,6 +44,25 @@ def get_data():
     winddirection = calculate_bearing(current["winddirection"])
     weathercode = current["weathercode"]
     date, time = current["time"].split("T")
+
+    r.close()
+
+def get_aqi_data():
+    global aqi, uvi
+    print(f"Requesting URL: {URL2}")
+    r = urequests.get(URL2)
+    # open the json data
+    j = r.json()
+    print("AQI/UVI data obtained!")
+    #print(j)
+
+    # parse relevant data from JSON 
+    # unfortunately for AQI-Data we have a 5 days forecast starting with today 00:00
+    # so its 120 values x 3 arrays
+    hourly = j["hourly"]
+    hour = int(time.split(":")[0]) 
+    uvi = hourly["uv_index"][hour]
+    aqi = hourly["european_aqi"][hour]
 
     r.close()
 
@@ -84,9 +107,9 @@ def draw_page():
         jpeg.decode(13, 40, jpegdec.JPEG_SCALE_FULL)
         display.set_pen(0)
         display.text(f"Temperature: {temperature}°C", int(WIDTH / 3), 28, WIDTH - 105, 2)
-        display.text(f"Wind Speed: {windspeed}kmph", int(WIDTH / 3), 48, WIDTH - 105, 2)
-        display.text(f"Wind Direction: {winddirection}", int(WIDTH / 3), 68, WIDTH - 105, 2)
-        display.text(f"Last update: {date}, {time}", int(WIDTH / 3), 88, WIDTH - 105, 2)
+        display.text(f"Wind: {winddirection} @ {windspeed}kmph" , int(WIDTH / 3), 48, WIDTH - 105, 2)
+        display.text(f"AQI: {aqi}  UVI: {uvi}", int(WIDTH / 3), 68, WIDTH - 105, 2)
+        display.text(f"Last update: {date}, {time}", 10, 105, WIDTH - 5, 2)
 
     else:
         display.set_pen(0)
@@ -97,8 +120,8 @@ def draw_page():
     display.update()
 
 
-get_data()
-draw_page()
+get_weather_data()
+get_aqi_data()
 
 # Call halt in a loop, on battery this switches off power.
 # On USB, the app will exit when A+C is pressed because the launcher picks that up.
