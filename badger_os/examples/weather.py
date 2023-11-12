@@ -67,6 +67,24 @@ def get_aqi_data():
     r.close()
 
 
+def get_aqi_data():
+    global aqi, uvi
+    print(f"Requesting URL: {URL2}")
+    r = urequests.get(URL2)
+    # open the json data
+    j = r.json()
+    print("AQI/UVI data obtained!")
+    #print(j)
+
+    # parse relevant data from JSON
+    hourly = j["hourly"]
+    hour = int(time.split(":")[0]) 
+    uvi = hourly["uv_index"][hour]
+    aqi = hourly["european_aqi"][hour]
+
+    r.close()
+
+
 def calculate_bearing(d):
     # calculates a compass direction from the wind direction in degrees
     dirs = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW']
@@ -81,13 +99,14 @@ def draw_page():
     display.set_pen(0)
 
     # Draw the page header
-    display.set_font("bitmap6")
+    display.set_font("bitmap8")
     display.set_pen(0)
     display.rectangle(0, 0, WIDTH, 20)
     display.set_pen(15)
-    display.text("Weather", 3, 4)
+    display.text("Weather - AQI - UVI", 3, 4)
     display.set_pen(0)
 
+    # draw the page body
     display.set_font("bitmap8")
 
     if temperature is not None:
@@ -122,6 +141,7 @@ def draw_page():
 
 get_weather_data()
 get_aqi_data()
+draw_page()
 
 # Call halt in a loop, on battery this switches off power.
 # On USB, the app will exit when A+C is pressed because the launcher picks that up.

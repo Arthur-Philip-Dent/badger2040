@@ -5,7 +5,7 @@ import badger2040
 
 display = badger2040.Badger2040()
 display.set_update_speed(2)
-display.set_thickness(4)
+display.set_thickness(2)
 
 WIDTH, HEIGHT = display.get_bounds()
 
@@ -15,6 +15,7 @@ if badger2040.is_wireless():
         display.connect()
         if display.isconnected():
             ntptime.settime()
+            badger2040.pico_rtc_to_pcf()
     except (RuntimeError, OSError) as e:
         print(f"Wireless Error: {e.value}")
 
@@ -26,7 +27,7 @@ except RuntimeError:
 
 rtc = machine.RTC()
 
-display.set_font("gothic")
+display.set_font("sans")
 
 cursors = ["year", "month", "day", "hour", "minute"]
 set_clock = False
