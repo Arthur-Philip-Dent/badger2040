@@ -1,5 +1,6 @@
 # This example grabs current weather details from Open Meteo and displays them on Badger 2040 W.
 # Find out more about the Open Meteo API at https://open-meteo.com
+# For bit speeding up, the "print()"-lines may be commented out
 
 import badger2040
 from badger2040 import WIDTH
@@ -27,13 +28,13 @@ jpeg = jpegdec.JPEG(display.display)
 display.connect()
 
 
-def get_data():
+def get_weather_data():
     global weathercode, temperature, windspeed, winddirection, date, time
-    print(f"Requesting URL: {URL}")
-    r = urequests.get(URL)
+    print(f"Requesting URL: {URL1}")
+    r = urequests.get(URL1)
     # open the json data
     j = r.json()
-    print("Data obtained!")
+    print("Weather data obtained!")
     #print(j)
 
     # parse relevant data from JSON
@@ -43,6 +44,25 @@ def get_data():
     winddirection = calculate_bearing(current["winddirection"])
     weathercode = current["weathercode"]
     date, time = current["time"].split("T")
+
+    r.close()
+
+def get_aqi_data():
+    global aqi, uvi
+    print(f"Requesting URL: {URL2}")
+    r = urequests.get(URL2)
+    # open the json data
+    j = r.json()
+    print("AQI/UVI data obtained!")
+    #print(j)
+
+    # parse relevant data from JSON 
+    # unfortunately for AQI-Data we have a 5 days forecast starting with today 00:00
+    # so its 120 values x 3 arrays
+    hourly = j["hourly"]
+    hour = int(time.split(":")[0]) 
+    uvi = hourly["uv_index"][hour]
+    aqi = hourly["european_aqi"][hour]
 
     r.close()
 
@@ -79,7 +99,7 @@ def draw_page():
     display.set_pen(0)
 
     # Draw the page header
-    display.set_font("bitmap6")
+    display.set_font("bitmap8")
     display.set_pen(0)
     display.rectangle(0, 0, WIDTH, 20)
     display.set_pen(15)
@@ -106,9 +126,9 @@ def draw_page():
         jpeg.decode(13, 40, jpegdec.JPEG_SCALE_FULL)
         display.set_pen(0)
         display.text(f"Temperature: {temperature}°C", int(WIDTH / 3), 28, WIDTH - 105, 2)
-        display.text(f"Wind: {winddirection} @{windspeed}km/h", int(WIDTH / 3), 48, WIDTH - 105, 2)
+        display.text(f"Wind: {winddirection} @ {windspeed}kmph" , int(WIDTH / 3), 48, WIDTH - 105, 2)
         display.text(f"AQI: {aqi}  UVI: {uvi}", int(WIDTH / 3), 68, WIDTH - 105, 2)
-        display.text(f"Last update: {date}, {time}", 18, 108, WIDTH - 5, 2)
+        display.text(f"Last update: {date}, {time}", 10, 105, WIDTH - 5, 2)
 
     else:
         display.set_pen(0)
